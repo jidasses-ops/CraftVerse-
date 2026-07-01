@@ -392,3 +392,33 @@ if(BUILD_WITH_TRACY)
 	FetchContent_MakeAvailable(tracy)
 	message(STATUS "Fetching Tracy - done")
 endif()
+#
+# Ensure the produced executable is named "CraftVerse".
+# Add this snippet AFTER your add_executable(...) calls, or near the end of CMakeLists.txt.
+#
+
+# Set desired executable output name
+set(CRAFTVERSE_OUTPUT_NAME "CraftVerse")
+
+# Try a few common target names used by Minetest forks; also try the project name
+foreach(_tgt IN ITEMS minetest luanti ${PROJECT_NAME})
+  if(TARGET ${_tgt})
+    message(STATUS "Setting output name for target '${_tgt}' to '${CRAFTVERSE_OUTPUT_NAME}'")
+    set_target_properties(${_tgt} PROPERTIES OUTPUT_NAME "${CRAFTVERSE_OUTPUT_NAME}")
+  endif()
+endforeach()
+
+# Fallback: if a single executable target is present but not named above, attempt to rename any executable targets
+get_property(_all_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY BUILDSYSTEM_TARGETS)
+foreach(_t IN LISTS _all_targets)
+  get_target_property(_type ${_t} TYPE)
+  if(_type STREQUAL "EXECUTABLE")
+    # Avoid re-setting for targets already handled
+    if(NOT TARGET ${_t} OR _t STREQUAL "minetest" OR _t STREQUAL "luanti")
+      # skip (already handled)
+    else()
+      message(STATUS "Also setting output name for executable target '${_t}' to '${CRAFTVERSE_OUTPUT_NAME}'")
+      set_target_properties(${_t} PROPERTIES OUTPUT_NAME "${CRAFTVERSE_OUTPUT_NAME}")
+    endif()
+  endif()
+endforeach()
