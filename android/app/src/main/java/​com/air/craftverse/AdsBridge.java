@@ -27,6 +27,24 @@ public class AdsBridge {
     private static boolean sInitialized = false;
 
     /**
+     * Load native library containing JNI bridge to C++ ads code.
+     * Replace "minetest" with the actual native library name from your CMake build.
+     */
+    static {
+        try {
+            System.loadLibrary("minetest");
+        } catch (UnsatisfiedLinkError e) {
+            Log.w(TAG, "Native library not found: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Native method: Register Activity with JNI layer for C++ access.
+     * Called from Java to provide the native layer with Activity + JavaVM references.
+     */
+    private static native void nativeRegister(Activity activity);
+
+    /**
      * Initialize Unity Ads. Call once from the Android Activity (onCreate).
      * @param activity The current Activity
      * @param gameId Your Unity Game ID (per platform)
@@ -49,6 +67,14 @@ public class AdsBridge {
                 public void onInitializationComplete() {
                     Log.i(TAG, "Unity Ads initialization complete.");
                     sInitialized = true;
+                    
+                    // Register native side after initialization
+                    try {
+                        nativeRegister(sActivity);
+                        Log.i(TAG, "Native layer registered successfully");
+                    } catch (UnsatisfiedLinkError e) {
+                        Log.w(TAG, "nativeRegister not available: " + e.getMessage());
+                    }
                 }
 
                 @Override
