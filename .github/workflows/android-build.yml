@@ -31,14 +31,14 @@ jobs:
           cache: gradle
       
       - name: Set up Android NDK
-        uses: ncipollo/setup-ndk@v2
+        uses: ammaraskar/setup-ndk@v1
         with:
-          ndk-version: '29.0.14206865'
+          ndk-version: 'r25c'
       
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gettext msgfmt
+          sudo apt-get install -y --no-install-recommends gettext
       
       - name: Grant execute permission for gradlew
         working-directory: ./android
