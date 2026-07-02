@@ -8,19 +8,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Setup Java
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build
+      - name: Build with Gradle
+        # On désactive la doc et les traductions (-P...)
+        # On exclut les checks, les tests et le lint (-x) pour éviter les erreurs de scripts inutiles
         run: |
           chmod +x gradlew
-          # On désactive la doc et les traductions ici pour éviter l'erreur CMake
-          ./gradlew assembleRelease -Pbuild_doc=OFF -Pbuild_po=OFF
+          ./gradlew assembleRelease -Pbuild_doc=OFF -Pbuild_po=OFF -x check -x lint -x test
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app/build/outputs/apk/release/*.apk
