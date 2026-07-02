@@ -434,9 +434,6 @@ if(BUILD_BENCHMARKS)
 endif()
 
 # Source files that are identical between server & client builds.
-# This means they don't use or include anything that depends on the
-# CHECK_CLIENT_BUILD() macro. If you wrongly add something here there will be
-# a compiler error and you need to instead add it to client_SRCS or common_SRCS.
 set(independent_SRCS
 	activeobject.cpp
 	chat.cpp
@@ -479,7 +476,6 @@ set(independent_SRCS
 
 file(GLOB common_HDRS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
-# /!\ Consider carefully before adding files here /!\
 set(common_SRCS
 	${common_HDRS}
 	clientdynamicinfo.cpp
@@ -571,13 +567,11 @@ list(APPEND client_SRCS
 )
 
 # Server sources
-# (nothing here because a client always comes with a server)
 set(server_SRCS
 	${common_SRCS}
 )
 
 # Avoid source_group on broken CMake version.
-# see issue #7074 #7075
 if (CMAKE_VERSION VERSION_GREATER 3.8.1)
 	source_group(TREE ${PROJECT_SOURCE_DIR} PREFIX "Source Files" FILES ${client_SRCS})
 	source_group(TREE ${PROJECT_SOURCE_DIR} PREFIX "Source Files" FILES ${server_SRCS})
@@ -596,8 +590,6 @@ include_directories(SYSTEM
 	${GMP_INCLUDE_DIR}
 	${JSON_INCLUDE_DIR}
 	${LUA_BIT_INCLUDE_DIR}
-	# on Android, Luanti depends on SDL2 directly
-	# on other platforms, only IrrlichtMt depends on SDL2
 	"$<$<PLATFORM_ID:Android>:${SDL2_INCLUDE_DIRS}>"
 )
 
@@ -617,9 +609,6 @@ if(USE_CURL)
 endif()
 
 
-# When cross-compiling place the executable in <build dir>/bin so that multiple
-# targets can be built from the same source folder. Otherwise, place it in
-# <source dir>/bin/ since Luanti can only run from there.
 if(CMAKE_CROSSCOMPILING)
 	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 else()
@@ -645,7 +634,6 @@ if(PRECOMPILE_HEADERS)
 endif()
 
 if(APPLE)
-	# Configure the Info.plist file
 	configure_file(
 		"${CMAKE_SOURCE_DIR}/misc/macos/Info.plist.in"
 		"${CMAKE_BINARY_DIR}/Info.plist"
@@ -653,7 +641,6 @@ if(APPLE)
 endif()
 
 if(BUILD_CLIENT)
-	# client target
 	if(ANDROID)
 		add_library(${PROJECT_NAME} SHARED)
 	else()
@@ -662,7 +649,6 @@ if(BUILD_CLIENT)
 
 
 	if(CMAKE_GENERATOR STREQUAL "Xcode")
-		# File with used entitlements
 		set(XCODE_CODE_SIGN_ENTITLEMENTS "${CMAKE_SOURCE_DIR}/misc/macos/entitlements/release.entitlements" CACHE FILEPATH "Path to entitlements file to be used with Xcode signing")
 
 		set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/build")
@@ -685,11 +671,6 @@ if(BUILD_CLIENT)
 			XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "$(inherited)"
 			XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${XCODE_CODE_SIGN_ENTITLEMENTS}"
 		)
-
-		# Prinv env variables to file, for debugging purposes
-		#add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-		#	COMMAND ${CMAKE_COMMAND} -E env bash ${CMAKE_SOURCE_DIR}/util/xcode/capture_env.sh ${CMAKE_BINARY_DIR}/post_env.log
-		#)
 
 		add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/util/xcode/install_resources.cmake
@@ -722,15 +703,11 @@ if(BUILD_CLIENT)
 		sha256
 		${FREETYPE_LIBRARY}
 		${PLATFORM_LIBS}
-		# on Android, Luanti depends on SDL2 directly
-		# on other platforms, only IrrlichtMt depends on SDL2
 		"$<$<PLATFORM_ID:Android>:${SDL2_LIBRARIES}>"
 	)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE "MT_BUILDTARGET=1")
 	if(NOT USE_LUAJIT)
 		set_target_properties(${PROJECT_NAME} PROPERTIES
-			# This is necessary for dynamic Lua modules
-			# to work when Lua is statically linked (issue #10806)
 			ENABLE_EXPORTS 1
 		)
 	endif()
@@ -788,7 +765,6 @@ endif(BUILD_CLIENT)
 
 
 if(BUILD_SERVER)
-	# server target
 	add_executable(${PROJECT_NAME}server)
 	list(SORT server_SRCS)
 	target_sources(${PROJECT_NAME}server PRIVATE
@@ -797,7 +773,6 @@ if(BUILD_SERVER)
 		${extra_windows_SRCS}
 	)
 
-	# don't link the irrlicht library
 	get_target_property(
 		IRRLICHT_INCLUDES IrrlichtMt::IrrlichtMt INTERFACE_INCLUDE_DIRECTORIES)
 	target_include_directories(${PROJECT_NAME}server PRIVATE ${IRRLICHT_INCLUDES})
@@ -817,8 +792,6 @@ if(BUILD_SERVER)
 	target_compile_definitions(${PROJECT_NAME}server PRIVATE "MT_BUILDTARGET=2")
 	if(NOT USE_LUAJIT)
 		set_target_properties(${PROJECT_NAME}server PROPERTIES
-			# This is necessary for dynamic Lua modules
-			# to work when Lua is statically linked (issue #10806)
 			ENABLE_EXPORTS 1
 		)
 	endif()
@@ -865,7 +838,7 @@ if(BUILD_SERVER)
 	endif()
 endif(BUILD_SERVER)
 
-# See issue #4638
+
 FILE(READ "${CMAKE_SOURCE_DIR}/src/unsupported_language_list.txt" GETTEXT_BLACKLISTED_LOCALES)
 STRING(REGEX REPLACE "\n" ";" GETTEXT_BLACKLISTED_LOCALES "${GETTEXT_BLACKLISTED_LOCALES}")
 
@@ -883,19 +856,12 @@ elseif (GETTEXTLIB_FOUND)
 	set(GETTEXT_USED_LOCALES ${GETTEXT_AVAILABLE_LOCALES})
 endif()
 
-# Set some optimizations and tweaks
 
 include(CheckCSourceCompiles)
 
 set(CMAKE_REQUIRED_INCLUDES ${LUA_INCLUDE_DIR})
 if(USE_LUAJIT)
-	# libm usually required if statically linking
 	set(CMAKE_REQUIRED_LIBRARIES ${LUA_LIBRARY} m)
-	# LuaJIT provides exactly zero ways to determine how recent it is (the version
-	# is unchanged since 2017), however it happens that string buffers were added
-	# after the changes which we care about so that works as an indicator.
-	# (https://github.com/LuaJIT/LuaJIT/commit/4c6b669 March 2021)
-	# Note: This is no longer true as of August 2023, but we're keeping the old check.
 	unset(HAVE_RECENT_LJ CACHE)
 	check_symbol_exists(luaopen_string_buffer "lualib.h" HAVE_RECENT_LJ)
 	if(NOT HAVE_RECENT_LJ)
@@ -909,9 +875,6 @@ if(USE_LUAJIT)
 elseif(NOT MSVC)
 	set(CMAKE_REQUIRED_LIBRARIES "")
 	unset(HAVE_ATCCALL CACHE)
-	# Note: we need to check the function without having the library
-	#       available for linking, so check_symbol_exists won't work.
-	# Incidentally this doesn't seem to work on MSVC...
 	check_c_source_compiles("#include <lua.h>\nint main(){return sizeof(lua_atccall);}" HAVE_ATCCALL)
 	if(NOT HAVE_ATCCALL)
 		string(CONCAT explanation_msg
@@ -924,32 +887,19 @@ elseif(NOT MSVC)
 endif()
 
 if(MSVC)
-	# Visual Studio
 	add_compile_definitions(_WIN32_WINNT=0x0601 WIN32_LEAN_AND_MEAN _CRT_SECURE_NO_WARNINGS)
-	# EHa enables SEH exceptions (used for catching segfaults)
 	set(CMAKE_CXX_FLAGS_RELEASE "/EHa /Ox /MD /GS- /Zi /fp:fast /D NDEBUG /D _HAS_ITERATOR_DEBUGGING=0")
 	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:SSE")
 	endif()
 
 	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
-
 	set(CMAKE_CXX_FLAGS_SEMIDEBUG "/MDd /Zi /Ob0 /O1 /RTC1")
-
-	# Debug build doesn't catch exceptions by itself
-	# Add some optimizations because otherwise it's VERY slow
 	set(CMAKE_CXX_FLAGS_DEBUG "/MDd /Zi /Ob0 /Od /RTC1")
-
-	# Flags for C files (sqlite)
-	# /MD = dynamically link to MSVCRxxx.dll
 	set(CMAKE_C_FLAGS_RELEASE "/O2 /Ob2 /MD")
 
-	# Flags that cannot be shared between cl and clang-cl
-	# https://clang.llvm.org/docs/UsersManual.html#clang-cl
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		add_compile_options(-fuse-ld=lld)
-
-		# Disable pragma-pack warning
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-pragma-pack")
 	else()
 		add_compile_options(/MP)
@@ -957,10 +907,8 @@ if(MSVC)
 		set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
 	endif()
 else()
-	# GCC or compatible compilers such as Clang
 	set(WARNING_FLAGS "-Wall -Wextra -Wno-unused-parameter -Werror=vla")
 
-	# if possible, error on struct/class keyword missmatch
 	check_cxx_compiler_flag("-Werror=mismatched-tags" SUPPORTS_W_MISMATCHED_TAGS)
 	if(SUPPORTS_W_MISMATCHED_TAGS)
 		set(WARNING_FLAGS "${WARNING_FLAGS} -Werror=mismatched-tags")
@@ -979,13 +927,8 @@ else()
 		add_compile_definitions(_WIN32_WINNT=0x0601 WIN32_LEAN_AND_MEAN)
 	endif()
 
-	# Use a safe subset of flags to speed up math calculations:
-	# - we don't need errno or math exceptions
-	# - we don't deal with signed zero
 	set(MATH_FLAGS "-fno-math-errno -fno-trapping-math -fno-signed-zeros")
 
-	# Enable SSE for floating point math on 32-bit x86 by default
-	# reasoning see luanti issue #11810 and https://gcc.gnu.org/wiki/FloatingPointMath
 	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
 		check_c_source_compiles("#ifndef __i686__\n#error\n#endif\nint main(){}" IS_I686)
 		if(IS_I686)
@@ -998,7 +941,6 @@ else()
 	if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
 			AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
 			AND CMAKE_CXX_COMPILER_VERSION MATCHES "^9\\.")
-		# Clang 9 has broken -ffast-math on glibc
 	else()
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${MATH_FLAGS}")
 	endif()
@@ -1007,7 +949,6 @@ else()
 	set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 ${WARNING_FLAGS} ${OTHER_FLAGS}")
 
 	if(UNIX)
-		# enable assertions for libstdc++
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wp,-D_GLIBCXX_ASSERTIONS")
 	endif()
 	if(USE_GPROF)
@@ -1027,7 +968,6 @@ if(WIN32)
 		install(FILES ${EXTRA_DLL} DESTINATION ${BINDIR})
 	endif()
 	if(VCPKG_APPLOCAL_DEPS)
-		# Collect the dll's from the output path
 		install(DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/Release/
 				DESTINATION ${BINDIR}
 				CONFIGURATIONS Release
@@ -1045,7 +985,6 @@ if(WIN32)
 				CONFIGURATIONS MinSizeRel
 				FILES_MATCHING PATTERN "*.dll")
 	else()
-		# Use the old-style way to install dll's
 		if(BUILD_CLIENT AND USE_SOUND)
 			if(OPENAL_DLL)
 				install(FILES ${OPENAL_DLL} DESTINATION ${BINDIR})
@@ -1111,42 +1050,5 @@ if(BUILD_CLIENT AND NOT ANDROID)
 		BUNDLE DESTINATION .
 	)
 	if(UNIX)
-		CreateLegacyAlias(minetest_alias "${EXECUTABLE_OUTPUT_PATH}/minetest" ${PROJECT_NAME})
-	endif()
+		CreateLegacy
 
-	if(APPLE)
-		install(CODE "
-			set(BU_CHMOD_BUNDLE_ITEMS ON)
-			include(BundleUtilities)
-			fixup_bundle(\"\\${CMAKE_INSTALL_PREFIX}/\${BUNDLE_PATH}\" \"\" \"\\${CMAKE_INSTALL_PREFIX}/\${BINDIR}\")
-		" COMPONENT Runtime)
-	endif()
-
-	if(USE_GETTEXT)
-		foreach(LOCALE ${GETTEXT_USED_LOCALES})
-			set_mo_paths(MO_BUILD_PATH MO_DEST_PATH ${LOCALE})
-			set(MO_BUILD_PATH "${MO_BUILD_PATH}/${PROJECT_NAME}.mo")
-			install(FILES ${MO_BUILD_PATH} DESTINATION ${MO_DEST_PATH})
-		endforeach()
-	endif()
-
-	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../fonts" DESTINATION "${SHAREDIR}"
-			FILES_MATCHING PATTERN "*.ttf" PATTERN "*.txt")
-endif()
-
-if(BUILD_SERVER)
-	install(TARGETS ${PROJECT_NAME}server DESTINATION ${BINDIR})
-	if(UNIX)
-		CreateLegacyAlias(minetestserver_alias "${EXECUTABLE_OUTPUT_PATH}/minetestserver" ${PROJECT_NAME}server)
-	endif()
-endif()
-
-if (ANDROID)
-	# Android does this manually in app/build.gradle -> prepareAssets
-	# for now!
-elseif (USE_GETTEXT)
-	set(MO_FILES)
-
-	foreach(LOCALE ${GETTEXT_USED_LOCALES})
-		set(PO_FILE_PATH "${GETTEXT_PO_PATH}/${LOCALE}/${PROJECT_NAME}.po")
-		set_mo_paths(MO_BUILD_PATH MO_DEST_
