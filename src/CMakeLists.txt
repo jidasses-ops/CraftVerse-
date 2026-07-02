@@ -524,7 +524,7 @@ set(common_SRCS
 )
 
 if(ANDROID)
-	list(APPEND common_SRCS porting_android.cpp)
+	list(APPEND common_SRCS porting_android.cpp android/ads/AdsJNI.cpp)
 endif()
 
 if(BUILD_UNITTESTS OR BUILD_BENCHMARKS)
@@ -1118,7 +1118,7 @@ if(BUILD_CLIENT AND NOT ANDROID)
 		install(CODE "
 			set(BU_CHMOD_BUNDLE_ITEMS ON)
 			include(BundleUtilities)
-			fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/${BUNDLE_PATH}\" \"\" \"\${CMAKE_INSTALL_PREFIX}/${BINDIR}\")
+			fixup_bundle(\"\\${CMAKE_INSTALL_PREFIX}/\${BUNDLE_PATH}\" \"\" \"\\${CMAKE_INSTALL_PREFIX}/\${BINDIR}\")
 		" COMPONENT Runtime)
 	endif()
 
@@ -1149,20 +1149,4 @@ elseif (USE_GETTEXT)
 
 	foreach(LOCALE ${GETTEXT_USED_LOCALES})
 		set(PO_FILE_PATH "${GETTEXT_PO_PATH}/${LOCALE}/${PROJECT_NAME}.po")
-		set_mo_paths(MO_BUILD_PATH MO_DEST_PATH ${LOCALE})
-		set(MO_FILE_PATH "${MO_BUILD_PATH}/${PROJECT_NAME}.mo")
-
-		add_custom_command(
-			OUTPUT ${MO_FILE_PATH}
-			COMMAND ${CMAKE_COMMAND} -E make_directory ${MO_BUILD_PATH}
-			COMMAND ${GETTEXT_MSGFMT} -o ${MO_FILE_PATH} ${PO_FILE_PATH}
-			DEPENDS ${PO_FILE_PATH}
-			WORKING_DIRECTORY "${GETTEXT_PO_PATH}/${LOCALE}"
-			COMMENT "mo-update [${LOCALE}]: Creating mo file"
-			)
-
-		list(APPEND MO_FILES ${MO_FILE_PATH})
-	endforeach()
-
-	add_custom_target(translations ALL COMMENT "mo-update" DEPENDS ${MO_FILES})
-endif()
+		set_mo_paths(MO_BUILD_PATH MO_DEST_
