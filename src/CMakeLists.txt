@@ -1048,7 +1048,21 @@ if(BUILD_CLIENT AND NOT ANDROID)
 		LIBRARY DESTINATION ${BINDIR}
 		ARCHIVE DESTINATION ${BINDIR}
 		BUNDLE DESTINATION .
-	)
+)
 	if(UNIX)
-		CreateLegacy
+		CreateLegacyAlias("luanti_legacy_alias" "${CMAKE_BINARY_DIR}/bin/minetest" "luanti")
+	endif()
+endif(BUILD_CLIENT AND NOT ANDROID)
+
+if(BUILD_SERVER AND NOT ANDROID)
+	if(UNIX)
+		CreateLegacyAlias("luantiserver_legacy_alias" "${CMAKE_BINARY_DIR}/bin/minetestserver" "luantiserver")
+	endif()
+endif(BUILD_SERVER AND NOT ANDROID)
+
+# Subdirectories
+if (BUILD_CLIENT OR BUILD_SERVER)
+	add_subdirectory(doc)
+	add_subdirectory(po)
+endif()
 
