@@ -26,10 +26,11 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y gettext
 
     - name: Build APK with Gradle
-      run: ./gradlew assembleDebug --no-daemon
+      run: |
+        export ANDROID_HOME=$ANDROID_SDK_ROOT
+        ./gradlew assembleDebug --no-daemon --stacktrace
       working-directory: android
       env:
-        # Augmente la mémoire pour éviter le crash lors de la compilation
         ORG_GRADLE_JVMARGS: -Xmx4096m -XX:MaxMetaspaceSize=1024m
 
     - name: Upload APK Artifact
