@@ -22,19 +22,21 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      
     - name: Install gettext
       run: sudo apt-get update && sudo apt-get install -y gettext
 
-    - name: Make gradlew executable
-      run: chmod +x gradlew
-      working-directory: android
-
     - name: Build APK with Gradle
-      run: ./gradlew assembleDebug --no-daemon --stacktrace
+      run: ./gradlew assembleDebug --no-daemon
       working-directory: android
+      env:
+        # Augmente la mémoire pour éviter le crash lors de la compilation
+        ORG_GRADLE_JVMARGS: -Xmx4096m -XX:MaxMetaspaceSize=1024m
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CraftVerse-Debug-APK
+        path: "**/build/outputs/apk/debug/*.apk"
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
