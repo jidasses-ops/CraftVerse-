@@ -1,5 +1,32 @@
 project(luanti)
 
+# --- DÉBUT DE LA CORRECTION ANDROID ---
+if(ANDROID)
+	message(STATUS "Build Android détecté : Configuration stricte appliquée.")
+	
+	# Forcer le mode Client et désactiver le serveur dédié
+	set(BUILD_CLIENT TRUE CACHE BOOL "Force client build on Android" FORCE)
+	set(BUILD_SERVER FALSE CACHE BOOL "Disable dedicated server on Android" FORCE)
+	
+	# Désactiver toutes les bases de données et outils PC qui font planter le NDK
+	set(ENABLE_POSTGRESQL FALSE CACHE BOOL "Disable PostgreSQL on Android" FORCE)
+	set(ENABLE_LEVELDB FALSE CACHE BOOL "Disable LevelDB on Android" FORCE)
+	set(ENABLE_REDIS FALSE CACHE BOOL "Disable Redis on Android" FORCE)
+	set(ENABLE_CURSES FALSE CACHE BOOL "Disable ncurses on Android" FORCE)
+	set(ENABLE_PROMETHEUS FALSE CACHE BOOL "Disable Prometheus on Android" FORCE)
+	set(ENABLE_SPATIAL FALSE CACHE BOOL "Disable SpatialIndex on Android" FORCE)
+	
+	# On s'assure que CMake sait qu'il fait une librairie partagée (.so)
+	add_compile_definitions(ANDROID)
+endif()
+# --- FIN DE LA CORRECTION ANDROID ---
+
+INCLUDE(CheckTypeSize)
+INCLUDE(CheckIncludeFiles)
+# ... la suite de ton fichier d'origine ...
+
+project(luanti)
+
 INCLUDE(CheckTypeSize)
 INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckLibraryExists)
