@@ -37,9 +37,3 @@ jobs:
       with:
         name: CraftVerse-Debug-APK
         path: "**/build/outputs/apk/debug/*.apk"
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: CraftVerse-Debug-APK
-        path: "**/build/outputs/apk/debug/*.apk"
