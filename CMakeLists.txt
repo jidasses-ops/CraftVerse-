@@ -1,5 +1,3 @@
-name: Build Android APK
-
 on:
   push:
     branches: [ main ]
