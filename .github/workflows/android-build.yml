@@ -3,66 +3,30 @@ name: Build Android APK
 on:
   push:
     branches: [ master, main ]
-  pull_request:
-    branches: [ master, main ]
   workflow_dispatch:
-
-permissions:
-  contents: write
-  actions: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-      
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
-      
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-      
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gettext
-      
-      - name: Grant execute permission for gradlew
-        working-directory: ./android
-        run: chmod +x ./gradlew
-      
-      - name: Build Debug APK
+
+      - name: Build APK
         working-directory: ./android
         run: |
-          ./gradlew wrapper --gradle-version 8.7
-          ./gradlew assembleDebug --stacktrace
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon --warning-mode all
       
-      - name: Upload Debug APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         if: success()
         with:
           name: app-debug
           path: android/app/build/outputs/apk/debug/**/*.apk
-          retention-days: 30
-      
-      - name: Build Summary
-        if: always()
-        run: |
-          echo "## Build Status" >> $GITHUB_STEP_SUMMARY
-          if [ -d "android/app/build/outputs/apk/debug" ]; then
-            echo "✅ Debug APK generated successfully!" >> $GITHUB_STEP_SUMMARY
-            find android/app/build/outputs/apk/debug -name "*.apk" -exec ls -lh {} \; >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Build failed - No APK output found" >> $GITHUB_STEP_SUMMARY
-          fi
