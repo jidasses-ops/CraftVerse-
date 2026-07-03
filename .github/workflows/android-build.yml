@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK (Ultimate Fix)
 
 on:
   push:
@@ -11,20 +11,32 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive # Indispensable pour récupérer tout le code source du moteur
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
 
-      - name: Build APK
+      - name: Install System Utilities
+        run: |
+          sudo apt-get update
+          # On installe ninja-build (requis par CMake) et gettext
+          sudo apt-get install -y ninja-build gettext
+          sudo ln -sf /usr/bin/msgfmt /usr/local/bin/msgfmt
+
+      - name: Build Debug APK (Force Bypass Errors)
         working-directory: ./android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon -Pbuild_native=OFF
+          # C'est la ligne magique : on désactive la compilation des traductions et de la doc pour tuer l'erreur msgfmt à la racine
+          ./gradlew assembleDebug --no-daemon --stacktrace -Pbuild_po=OFF -Pbuild_doc=OFF
       
-      - name: Upload APK
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         if: success()
         with:
