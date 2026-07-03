@@ -1,39 +1,42 @@
-name: Build Android APK (Brute Force)
+name: Android Build
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
+    - name: Checkout source code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive # Assure le téléchargement des sous-modules C++ si présents
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gettext ninja-build
-          sudo ln -sf /usr/bin/msgfmt /usr/local/bin/msgfmt || true
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
 
-      - name: Force Build APK
-        working-directory: ./android
-        run: |
-          chmod +x ./gradlew
-          ./gradlew assembleDebug -x lint -x test --no-daemon
-      
-      - name: Upload APK (Even on failure)
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: app-debug
-          path: android/app/build/outputs/apk/debug/**/*.apk
+    - name: Make gradlew executable
+      run: chmod +x gradlew
+      # Si ton gradlew est dans un sous-dossier /android, ajoute la ligne suivante :
+      # working-directory: android
+
+    - name: Build APK with Gradle
+      run: ./gradlew assembleDebug --stacktrace --info
+      # Si ton dossier de build Android est spécifique, décommente la ligne ci-dessous :
+      # working-directory: android
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CraftVerse-Debug-APK
+        path: "**/build/outputs/apk/debug/*.apk"
