@@ -36,26 +36,11 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gettext msgfmt
+          sudo apt-get install -y --no-install-recommends gettext
       
       - name: Grant execute permission for gradlew
         working-directory: ./android
         run: chmod +x ./gradlew
-      
-      - name: Setup Gradle Properties
-        working-directory: ./android
-        run: |
-          cat > gradle.properties << 'EOF'
-          org.gradle.jvmargs=-Xmx8G -XX:+HeapDumpOnOutOfMemoryError
-          org.gradle.daemon=true
-          org.gradle.parallel=true
-          org.gradle.parallel.threads=8
-          org.gradle.configureondemand=true
-          android.enableJetifier=false
-          android.useAndroidX=true
-          android.nonTransitiveRClass=false
-          android.nonFinalResIds=false
-          EOF
       
       - name: Build Debug APK
         working-directory: ./android
@@ -75,10 +60,10 @@ jobs:
       - name: Build Summary
         if: always()
         run: |
-          echo "## 📱 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Build Status" >> $GITHUB_STEP_SUMMARY
           if [ -d "android/app/build/outputs/apk/debug" ]; then
             echo "✅ Debug APK generated successfully!" >> $GITHUB_STEP_SUMMARY
-            find android/app/build/outputs/apk/debug -name "*.apk" -exec ls -lh {} \; >> $GITHUB_STEP_SUMMARY
+            find android/app/build/outputs/apk/debug -name "*.apk" -exec ls -lh {} \;
           else
             echo "❌ Build failed - No APK output found" >> $GITHUB_STEP_SUMMARY
-          fi.
+          fi
