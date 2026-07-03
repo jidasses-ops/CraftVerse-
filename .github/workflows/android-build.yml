@@ -30,15 +30,13 @@ jobs:
           distribution: 'temurin'
           cache: gradle
       
-      - name: Set up Android NDK
-        uses: ammaraskar/setup-ndk@v1
-        with:
-          ndk-version: 'r25c'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
       
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gettext
+          sudo apt-get install -y --no-install-recommends gettext msgfmt
       
       - name: Grant execute permission for gradlew
         working-directory: ./android
@@ -83,4 +81,4 @@ jobs:
             find android/app/build/outputs/apk/debug -name "*.apk" -exec ls -lh {} \; >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Build failed - No APK output found" >> $GITHUB_STEP_SUMMARY
-          fi
+          fi.
