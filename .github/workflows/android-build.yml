@@ -45,9 +45,8 @@ jobs:
       - name: Build Debug APK
         working-directory: ./android
         run: |
-          ./gradlew assembleDebug \
-            --stacktrace \
-            --info
+          ./gradlew wrapper --gradle-version 8.7
+          ./gradlew assembleDebug --stacktrace
       
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -63,7 +62,7 @@ jobs:
           echo "## Build Status" >> $GITHUB_STEP_SUMMARY
           if [ -d "android/app/build/outputs/apk/debug" ]; then
             echo "✅ Debug APK generated successfully!" >> $GITHUB_STEP_SUMMARY
-            find android/app/build/outputs/apk/debug -name "*.apk" -exec ls -lh {} \;
+            find android/app/build/outputs/apk/debug -name "*.apk" -exec ls -lh {} \; >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Build failed - No APK output found" >> $GITHUB_STEP_SUMMARY
           fi
